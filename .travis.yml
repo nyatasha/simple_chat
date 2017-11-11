@@ -1,2 +1,5 @@
-lannguage: scala
-version:
+language: scala
+scala:
+ - 2.11.7
+script:
+ - sbt clean
