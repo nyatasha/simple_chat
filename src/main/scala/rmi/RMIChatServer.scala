@@ -1,10 +1,8 @@
-package rmichat
+package rmi
 
 import java.rmi.{Naming, RemoteException}
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
-
-import rmi.RemoteClient
 
 import scala.collection.mutable
 
@@ -12,6 +10,7 @@ import scala.collection.mutable
   def connect(client: RemoteClient): Unit
   def disconnect(client: RemoteClient): Unit
   def getClients: Seq[RemoteClient]
+  def getDeadClients: Seq[RemoteClient]
   def publicMessage(client: RemoteClient, text: String): Unit
 }
 object RMIChatServer extends UnicastRemoteObject with App with RemoteServer {
@@ -38,6 +37,10 @@ object RMIChatServer extends UnicastRemoteObject with App with RemoteServer {
     clients
   }
 
+  def getDeadClients: Seq[RemoteClient] = {
+    deadClients
+  }
+
   def publicMessage(client: RemoteClient, text: String): Unit = {
     val message = client.name + " : " + text
     clients.foreach(_.message(client, message))
@@ -47,6 +50,7 @@ object RMIChatServer extends UnicastRemoteObject with App with RemoteServer {
     val dead = clients.filter(c =>
       try {
         c.clientUpdate(clients)
+        c.deadClientUpdate(deadClients)
         false
       } catch {
         case ex: RemoteException => true

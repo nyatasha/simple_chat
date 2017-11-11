@@ -1,7 +1,7 @@
 package rmi
 
 import scalafx.Includes._
-import java.rmi.server.{RemoteServer, UnicastRemoteObject}
+import java.rmi.server.UnicastRemoteObject
 import java.rmi.Naming
 
 import scalafx.application.JFXApp
@@ -20,7 +20,9 @@ import scala.collection.mutable
   def name: String
   def message(sender: RemoteClient, text: String): Unit
   def clientUpdate(clients: Seq[RemoteClient]): Unit
+  def deadClientUpdate(deadClients: Seq[RemoteClient]): Unit
 }
+
 object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
   val dialog = new TextInputDialog("localhost")
   dialog.title = "Server Maccompile" +
@@ -51,7 +53,9 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
   val chatArea = new TextArea
   chatArea.editable = false
   var clients = server.getClients
-  val userList = new ListView(clients.map(x=>x.name))
+  var deadClients = server.getDeadClients
+  val userList = new ListView(clients.map(x=>x.name+" [online]"))
+  var deadUserList = new ListView(deadClients.map(x=>x.name+" [offline]"))
   val chatField = new TextField
   chatField.onAction = (ae: ActionEvent) => {
     if(chatField.text().trim.nonEmpty) {
@@ -78,8 +82,11 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       chatScroll.content = chatArea
       val userScroll = new ScrollPane
       userScroll.content = userList
+      val deadUserScroll = new ScrollPane
+      deadUserScroll.content = deadUserList
       val leftborder = new BorderPane
       leftborder.top = userScroll
+      leftborder.bottom = deadUserScroll
       val topborder = new BorderPane
       topborder.center = chatField
       val border = new BorderPane
@@ -89,15 +96,23 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       root = border
     }
   }
+
   def name: String = _name
 
   def message(sender: RemoteClient, text: String): Unit = Platform.runLater {
     chatArea.appendText(sender.name + " : " + text+"\n")
   }
+
   def clientUpdate(clients: Seq[RemoteClient]): Unit = Platform.runLater {
     this.clients = clients
-    if (userList != null) userList.items = ObservableBuffer(clients.map { c =>
-      c.name
+    if(userList!=null) userList.items = ObservableBuffer(clients.map { c =>
+      c.name+" [online]"
+    })
+  }
+  def deadClientUpdate(deadClients: Seq[RemoteClient]): Unit = Platform.runLater {
+    this.deadClients = deadClients
+    deadUserList.items = ObservableBuffer(deadClients.map { c =>
+      c.name+" [offline]"
     })
   }
 }
