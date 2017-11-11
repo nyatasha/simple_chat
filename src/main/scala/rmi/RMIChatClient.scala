@@ -14,7 +14,6 @@ import java.rmi.RemoteException
 import scalafx.collections.ObservableBuffer
 import scalafx.application.Platform
 import scalafx.scene.control.Alert.AlertType
-import scala.collection.mutable
 
 @remote trait RemoteClient {
   def name: String
@@ -33,6 +32,7 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
     case Some(machine) =>
       Naming.lookup(s"rmi://$machine/ChatServer") match {
         case server: RemoteServer =>
+          println("Naming "+Naming.lookup(s"rmi://$machine/ChatServer"))
           val dialog = new TextInputDialog("")
           dialog.title = "Chat Name"
           dialog.contentText = "What name do you want to go by?"
@@ -58,7 +58,12 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
   var deadUserList = new ListView(deadClients.map(x=>x.name+" [offline]"))
   val chatField = new TextField
   chatField.onAction = (ae: ActionEvent) => {
-    if(chatField.text().trim.nonEmpty) {
+    if(chatField.text().trim=="quit"){
+      server.disconnect(this)
+      (new SayGoodBye(byeText).sayBye(name)).showAndWait()
+      sys.exit(0)
+    }
+    else if(chatField.text().trim.nonEmpty) {
       val recipients = if(userList.selectionModel().selectedItems.isEmpty) {
         clients
       } else {
@@ -73,6 +78,13 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       }
       chatField.text = ""
     }
+  }
+  val btnExit = new Button
+  btnExit.text = "Leave"
+  btnExit.onAction = handle {
+    server.disconnect(this)
+    (new SayGoodBye(byeButton).sayBye(name)).showAndWait()
+    sys.exit(0)
   }
 
   stage = new JFXApp.PrimaryStage {
@@ -89,6 +101,7 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       leftborder.bottom = deadUserScroll
       val topborder = new BorderPane
       topborder.center = chatField
+      topborder.right = btnExit
       val border = new BorderPane
       border.top = topborder
       border.left = leftborder//userScroll
@@ -115,4 +128,17 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       c.name+" [offline]"
     })
   }
+  type GoodbyeStrategy = String => Alert
+
+  class SayGoodBye(bye: GoodbyeStrategy) {
+    def sayBye(username: String)= bye(username)
+  }
+
+  val byeButton: GoodbyeStrategy  = {
+    (username: String) => new Alert(AlertType.Information) {headerText = "Goodbuy, "+username+"! You're leaving chat by pressing exit button!"}
+  }
+  val byeText: GoodbyeStrategy  = {
+    (username: String) => new Alert(AlertType.Information) {headerText = "Goodbuy, "+username+"! You're leaving chat by typing quit command!"}
+  }
+
 }

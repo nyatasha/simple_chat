@@ -58,3 +58,4 @@ object RMIChatServer extends UnicastRemoteObject with App with RemoteServer {
     clients --= dead
   }
 }
+
