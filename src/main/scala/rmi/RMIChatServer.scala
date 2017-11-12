@@ -13,12 +13,15 @@ import scala.collection.mutable
   def getDeadClients: Seq[RemoteClient]
   def publicMessage(client: RemoteClient, text: String): Unit
 }
-object RMIChatServer extends UnicastRemoteObject with App with RemoteServer {
-  LocateRegistry.createRegistry(1099)
-  Naming.rebind("ChatServer", this)
+object RMIChatServer extends UnicastRemoteObject with RemoteServer {
 
   private val clients = mutable.Buffer[RemoteClient]()
   private val deadClients = mutable.Buffer[RemoteClient]()
+
+  def main()={
+    LocateRegistry.createRegistry(1099)
+    Naming.rebind("ChatServer", this)
+  }
 
   def connect(client: RemoteClient): Unit = {
     if (deadClients contains client)
