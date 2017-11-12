@@ -2,15 +2,13 @@ package rmi
 
 import scalafx.Includes._
 import java.rmi.server.UnicastRemoteObject
-import java.rmi.Naming
+import java.rmi.{Naming, Remote, RemoteException}
 
 import scalafx.application.JFXApp
 import scalafx.scene.control._
 import scalafx.scene.Scene
 import scalafx.event.ActionEvent
 import scalafx.scene.layout.BorderPane
-import java.rmi.RemoteException
-
 import scalafx.collections.ObservableBuffer
 import scalafx.application.Platform
 import scalafx.scene.control.Alert.AlertType
@@ -32,7 +30,6 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
     case Some(machine) =>
       Naming.lookup(s"rmi://$machine/ChatServer") match {
         case server: RemoteServer =>
-          println("Naming "+Naming.lookup(s"rmi://$machine/ChatServer"))
           val dialog = new TextInputDialog("")
           dialog.title = "Chat Name"
           dialog.contentText = "What name do you want to go by?"
