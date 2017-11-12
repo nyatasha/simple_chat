@@ -2,5 +2,6 @@ language: scala
 scala:
  - 2.11.7
 script:
- - cd build-sbt
- - sbt ++$TRAVIS_SCALA_VERSION test
+ - sbt clean compile
+ - sbt "run-main rmi.RMIChatServer"
+ - sbt test
