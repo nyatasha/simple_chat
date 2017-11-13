@@ -2,15 +2,13 @@ package rmi
 
 import scalafx.Includes._
 import java.rmi.server.UnicastRemoteObject
-import java.rmi.Naming
+import java.rmi.{Naming, Remote, RemoteException}
 
 import scalafx.application.JFXApp
 import scalafx.scene.control._
 import scalafx.scene.Scene
 import scalafx.event.ActionEvent
 import scalafx.scene.layout.BorderPane
-import java.rmi.RemoteException
-
 import scalafx.collections.ObservableBuffer
 import scalafx.application.Platform
 import scalafx.scene.control.Alert.AlertType
@@ -32,7 +30,6 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
     case Some(machine) =>
       Naming.lookup(s"rmi://$machine/ChatServer") match {
         case server: RemoteServer =>
-          println("Naming "+Naming.lookup(s"rmi://$machine/ChatServer"))
           val dialog = new TextInputDialog("")
           dialog.title = "Chat Name"
           dialog.contentText = "What name do you want to go by?"
@@ -56,6 +53,7 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
   var deadClients = server.getDeadClients
   val userList = new ListView(clients.map(x=>x.name+" [online]"))
   var deadUserList = new ListView(deadClients.map(x=>x.name+" [offline]"))
+  deadUserList.disable = true
   val chatField = new TextField
   chatField.onAction = (ae: ActionEvent) => {
     if(chatField.text().trim=="quit"){
@@ -79,12 +77,26 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       chatField.text = ""
     }
   }
+
+  val btnReturn = new Button
+  btnReturn.text = "Return"
+  btnReturn.visible = false
+  btnReturn.onAction = handle {
+    server.connect(this)
+    btnExit.disable = false
+    btnReturn.visible = false
+    userList.disable = false
+    chatArea.disable = false
+  }
   val btnExit = new Button
   btnExit.text = "Leave"
   btnExit.onAction = handle {
-    server.disconnect(this)
     (new SayGoodBye(byeButton).sayBye(name)).showAndWait()
-    sys.exit(0)
+    btnReturn.visible = true
+    server.disconnect(this)
+    btnExit.disable = true
+    chatArea.disable = true
+    userList.disable = true
   }
 
   stage = new JFXApp.PrimaryStage {
@@ -100,11 +112,12 @@ object RMIChatClient extends UnicastRemoteObject with JFXApp with RemoteClient {
       leftborder.top = userScroll
       leftborder.bottom = deadUserScroll
       val topborder = new BorderPane
+      topborder.left = btnReturn
       topborder.center = chatField
       topborder.right = btnExit
       val border = new BorderPane
       border.top = topborder
-      border.left = leftborder//userScroll
+      border.left = leftborder
       border.center = chatScroll
       root = border
     }
