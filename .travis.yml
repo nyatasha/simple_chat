@@ -2,4 +2,6 @@ language: scala
 scala:
  - 2.11.7
 script:
- - sbt compile test
+ - sbt clean
+ - sbt compile
+ - sbt test
